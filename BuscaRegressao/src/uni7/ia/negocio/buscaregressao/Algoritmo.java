@@ -1,65 +1,83 @@
 package uni7.ia.negocio.buscaregressao;
 
-import uni7.ia.model.*;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.Optional;
 import java.util.Stack;
 
 import uni7.ia.model.buscaregressao.Estado;
+import uni7.ia.utils.buscaregressao.Util;
 
 public class Algoritmo {
 
-	Estado estadoInicial;
-	Estado estadoFinal;
-	Stack<Estado> LE = new Stack<Estado>(); // Estados que estão sendo correntemente examinados
-	Stack<Estado> LNE = new Stack<Estado>(); // Nós cujos descendentes ainda não foram examinados
-	ArrayList<Estado> BSS; // Nós cujos descendentes não contem um nó objetivo
-	Estado EC;// Igual ao estado adicionado mais recente ao LE
+	Stack<ArrayList<String>> LE;
+	Stack<ArrayList<String>> LNE;
+	ArrayList<ArrayList<String>> BSS;
+	ArrayList<String> EC;
 	ArrayList<Estado> filhos;
+	ArrayList<Estado> estadosConferidos;
+	int totalNosVisitados = 0;
+	boolean sucesso;
 
-	public Algoritmo(Estado estInicial, Estado estFinal) {
-		this.estadoInicial = estInicial;
-		this.estadoFinal = estFinal;
-		this.EC = estadoInicial;
+	public Algoritmo() {
+		LE = new Stack<>();
+		LNE = new Stack<>();
+		BSS = new ArrayList<>();
+		estadosConferidos = new ArrayList<>();
+		sucesso = false;
 	}
 
-	public Optional<Stack<Estado>> BuscaRegressao(Estado estadoInicial, Estado estadoFinal) {
-		LE.push(estadoInicial);
-		LNE.push(estadoInicial);
+	public void BuscaRegressao(Estado estadoInicial, Estado estadoFinal) {
+		LE.push(estadoInicial.posicoes);
+		LNE.push(estadoInicial.posicoes);
+		EC = estadoInicial.posicoes;
 
 		while (!LNE.isEmpty()) {
-			if (EC == estadoFinal)
-				return Optional.of(LE);
+			totalNosVisitados++;
 
-			filhos = gerarFilhos(EC);
+			if (EC.equals(estadoFinal.posicoes)) {
+				System.out.println("Sucesso.");
+				System.out.println("Total de nós visitados: " + totalNosVisitados);
+				System.out.println("Total de nós que levam ao caminho correto: " + LE.size());
+				this.sucesso = true;
 
-			if (filhos.isEmpty()) {
-				while (!LNE.empty() && EC.equals(LE.firstElement())) {
-					BSS.add(EC);
-					LE.pop();
-					LNE.pop();
-					EC = (Estado) LNE.firstElement();
+				for (int i = 0; i < LE.size(); i++) {
+					Util.ExibirEstado(LE.get(i));
 				}
-				LE.add(EC);
+				break;
+
 			} else {
-				for (Estado e : filhos) {
-					LNE.add(e);
+				filhos = gerarFilhos(EC);
+
+				if (filhos.isEmpty()) {
+					while (!LE.empty() && EC.equals(LE.peek())) {
+						BSS.add(EC);
+						LE.pop();
+						LNE.pop();
+						if (!LNE.empty())
+							EC = LNE.peek();
+					}
+					LE.add(EC);
+				} else {
+					for (Estado e : filhos) {
+						LNE.add(e.posicoes);
+					}
+					EC = LNE.peek();
+					LE.add(EC);
 				}
-				EC = (Estado) LNE.firstElement();
-				LE.add(EC);
 			}
 		}
-		return Optional.empty(); // ver forma de retornar a falha
+
+		if (!sucesso)
+			System.out.println("Falha. Objetivo não encontrado.");
+
 	}
 
-	public ArrayList<Estado> gerarFilhos(Estado estadoAtual) {
+	public ArrayList<Estado> gerarFilhos(ArrayList<String> estadoAtual) {
 
-		int indicePosicaoVazia = estadoAtual.posicoes.indexOf("X");
+		int indicePosicaoVazia = estadoAtual.indexOf("X");
 		ArrayList<Estado> estados = new ArrayList<Estado>();
 
-		ArrayList<String> listaPosicoesAtuais = new ArrayList<String>(estadoAtual.posicoes);
+		ArrayList<String> listaPosicoesAtuais = new ArrayList<String>(estadoAtual);
 
 		switch (indicePosicaoVazia) {
 		case 0:
@@ -140,11 +158,12 @@ public class Algoritmo {
 		return estados;
 	}
 
-	public void AddEstado(ArrayList<Estado> estados, Estado estadoAtual, ArrayList<String> listaPosicoes, int position) {
-		Collections.swap(listaPosicoes, estadoAtual.posicoes.indexOf("X"), position);
-		Estado estado = new Estado(listaPosicoes, estadoAtual);
+	public void AddEstado(ArrayList<Estado> estados, ArrayList<String> estadoAtual, ArrayList<String> listaPosicoes,
+			int position) {
+		Collections.swap(listaPosicoes, estadoAtual.indexOf("X"), position);
+		Estado estado = new Estado(listaPosicoes);
 
-		if (!LNE.contains(estado) && !BSS.contains(estado))
+		if (!LNE.contains(estado.posicoes) && !LE.contains(estado.posicoes) && !BSS.contains(estado.posicoes))
 			estados.add(estado);
 	}
 }

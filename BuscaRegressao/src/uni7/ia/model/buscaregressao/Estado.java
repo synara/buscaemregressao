@@ -5,7 +5,7 @@ import java.util.ArrayList;
 public class Estado {
 	
 	public ArrayList<String> posicoes;
-    Estado pai;    
+    Estado pai;   
     
     public Estado(ArrayList<String> posicoes) {
       this.posicoes = posicoes;
